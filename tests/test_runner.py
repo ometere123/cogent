@@ -1,6 +1,4 @@
-import json
 import sys
-from pathlib import Path
 
 from cogent.models import Challenge, Outcome, ValidatorProfile
 from cogent.runner import derived_seed, run_matrix
