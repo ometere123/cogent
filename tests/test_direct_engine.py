@@ -13,7 +13,7 @@ CONTRACT_SOURCE = '''# v0.1.0
 import genlayer as gl
 
 
-class EvidenceGate(gl.contract.Contract):
+class EvidenceGate(gl.Contract):
     result: str
 
     def __init__(self):
