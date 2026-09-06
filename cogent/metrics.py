@@ -3,7 +3,6 @@ from __future__ import annotations
 import math
 from collections import Counter, defaultdict
 from statistics import mean, median
-from typing import Iterable
 
 from .models import Challenge, Observation, Outcome, ValidatorProfile
 
