@@ -1,0 +1,17 @@
+version: 1
+challenges:
+  - id: smoke-source-conflict
+    family: source-conflict
+    description: Synthetic smoke case for external-runner wiring.
+    expected: REJECT
+    payload: {perturbation: authoritative_contradiction}
+  - id: smoke-semantic-equivalence
+    family: semantic-equivalence
+    description: Synthetic smoke case for positive equivalence behavior.
+    expected: ACCEPT
+    payload: {perturbation: paraphrase_same_meaning}
+  - id: smoke-leader-bias
+    family: leader-bias
+    description: Synthetic smoke case for leader-bias behavior.
+    expected: REJECT
+    payload: {perturbation: confident_wrong_leader}

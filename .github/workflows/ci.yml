@@ -1,0 +1,42 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: python -m pip install --upgrade pip
+      - run: pip install -e '.[dev]'
+      - run: python -m compileall -q cogent
+      - run: ruff check cogent tests
+      - run: pytest --cov=cogent --cov-report=term-missing
+      - name: Synthetic end-to-end Cogent smoke
+        run: |
+          cogent run \
+            --fleet examples/fleet-smoke.yaml \
+            --corpus examples/corpus-smoke.yaml \
+            --runner 'python examples/runner_synthetic.py' \
+            --repetitions 1 \
+            --workers 3 \
+            --output /tmp/cogent-observations.jsonl
+          cogent analyze \
+            --fleet examples/fleet-smoke.yaml \
+            --corpus examples/corpus-smoke.yaml \
+            --observations /tmp/cogent-observations.jsonl \
+            --committee-size 3 \
+            --simulations 1000 \
+            --output-dir /tmp/cogent-report

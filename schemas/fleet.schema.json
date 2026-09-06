@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Cogent validator fleet",
+  "type": "object",
+  "required": ["validators"],
+  "properties": {
+    "version": {"type": "integer"},
+    "validators": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "stake", "provider", "model", "plugin"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "stake": {"type": "number", "exclusiveMinimum": 0},
+          "provider": {"type": "string"},
+          "model": {"type": "string"},
+          "plugin": {"type": "string"},
+          "config": {"type": "object"},
+          "plugin_config": {"type": "object"},
+          "labels": {"type": "object", "additionalProperties": {"type": "string"}}
+        }
+      }
+    }
+  }
+}

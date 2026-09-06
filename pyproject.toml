@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cogent-gl"
+version = "0.1.0"
+description = "Behavioral independence, correlated-failure, drift, and committee-risk analysis for GenLayer validator fleets"
+readme = "README.md"
+requires-python = ">=3.12"
+license = {text = "MIT"}
+authors = [{name = "Cogent contributors"}]
+keywords = ["genlayer", "validators", "consensus", "testing", "infrastructure", "llm"]
+dependencies = ["PyYAML>=6.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "pytest-cov>=5.0", "ruff>=0.6"]
+genlayer = ["genlayer-test>=0.1.0"]
+
+[project.scripts]
+cogent = "cogent.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["cogent*"]
+
+[tool.setuptools.package-data]
+"cogent.templates" = ["*.yaml", "*.py"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

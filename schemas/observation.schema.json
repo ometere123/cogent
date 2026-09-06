@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Cogent observation",
+  "type": "object",
+  "required": ["validator_id", "challenge_id", "run_id", "outcome"],
+  "properties": {
+    "validator_id": {"type": "string"},
+    "challenge_id": {"type": "string"},
+    "run_id": {"type": "string"},
+    "outcome": {"enum": ["ACCEPT", "REJECT", "UNDETERMINED", "TIMEOUT", "ERROR"]},
+    "latency_ms": {"type": ["number", "null"]},
+    "reason": {"type": "string"},
+    "metadata": {"type": "object"}
+  }
+}

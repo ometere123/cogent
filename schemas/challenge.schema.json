@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Cogent challenge corpus",
+  "type": "object",
+  "required": ["challenges"],
+  "properties": {
+    "challenges": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "family", "description"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "family": {"type": "string", "minLength": 1},
+          "description": {"type": "string"},
+          "expected": {"enum": ["ACCEPT", "REJECT", null]},
+          "tags": {"type": "array", "items": {"type": "string"}},
+          "payload": {"type": "object"}
+        }
+      }
+    }
+  }
+}

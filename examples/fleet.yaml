@@ -1,0 +1,58 @@
+version: 1
+validators:
+  - id: alpha-1
+    stake: 10
+    provider: openai
+    model: gpt-4o
+    plugin: openai-compatible
+    config: {temperature: 0.2}
+    plugin_config: {api_key_env_var: OPENAI_API_KEY}
+    labels: {synthetic_behavior: alpha}
+  - id: alpha-2
+    stake: 9
+    provider: openai
+    model: gpt-4o
+    plugin: openai-compatible
+    config: {temperature: 0.4}
+    plugin_config: {api_key_env_var: OPENAI_API_KEY}
+    labels: {synthetic_behavior: alpha}
+  - id: beta-1
+    stake: 8
+    provider: ollama
+    model: mistral
+    plugin: ollama
+    config: {temperature: 0.3}
+    plugin_config: {api_url: http://localhost:11434}
+    labels: {synthetic_behavior: beta}
+  - id: beta-2
+    stake: 7
+    provider: ollama
+    model: mistral
+    plugin: ollama
+    config: {temperature: 0.7}
+    plugin_config: {api_url: http://localhost:11434}
+    labels: {synthetic_behavior: beta}
+  - id: gamma-1
+    stake: 6
+    provider: openai
+    model: gpt-4o-mini
+    plugin: openai-compatible
+    config: {temperature: 0.1}
+    plugin_config: {api_key_env_var: OPENAI_API_KEY}
+    labels: {synthetic_behavior: gamma}
+  - id: delta-1
+    stake: 5
+    provider: ollama
+    model: llama3
+    plugin: ollama
+    config: {temperature: 0.5}
+    plugin_config: {api_url: http://localhost:11434}
+    labels: {synthetic_behavior: delta}
+  - id: epsilon-1
+    stake: 4
+    provider: openai
+    model: gpt-4o-mini
+    plugin: openai-compatible
+    config: {temperature: 0.6}
+    plugin_config: {api_key_env_var: OPENAI_API_KEY}
+    labels: {synthetic_behavior: epsilon}
