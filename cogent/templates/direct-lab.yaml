@@ -1,0 +1,42 @@
+# Cogent native GenLayer Direct Mode lab manifest.
+# Replace the contract path/method and map the corpus cases you want to execute natively.
+version: 1
+project_root: .
+
+contract:
+  path: ../your-genlayer-project/contracts/YourContract.py
+  sender: cogent-direct
+  # sdk_version: v0.2.16
+  # constructor_args: []
+  # constructor_kwargs: {}
+  # check_pickling: true
+
+cases:
+  authoritative-source-contradicts-leader:
+    method: evaluate
+    args: []
+    expected_captures: 1
+    validator_indices: all
+
+    leader:
+      web:
+        - pattern: 'api\.example\.com/authoritative'
+          status: 200
+          body: '{"status":"active"}'
+
+    validator:
+      web:
+        - pattern: 'api\.example\.com/authoritative'
+          status: 200
+          body: '{"status":"expired"}'
+
+    # Optional per-validator evidence override. The key must match fleet.yaml.
+    validators:
+      alpha-1:
+        web:
+          - pattern: 'api\.example\.com/authoritative'
+            status: 200
+            body: '{"status":"active"}'
+
+# Native Direct Mode requires a mapping for every challenge in the corpus passed to `cogent run`.
+# For focused labs, use a smaller corpus file containing only the mapped challenges.
