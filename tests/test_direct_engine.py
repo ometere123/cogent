@@ -50,7 +50,7 @@ def _write_lab(tmp_path: Path, *, include_unknown_validator: bool = False) -> tu
         "validator-b": {
             "web": [
                 {
-                    "pattern": r"evidence\\.example/data",
+                    "pattern": r"evidence\.example/data",
                     "status": 200,
                     "body": json.dumps({"decision": "REJECT"}),
                 }
@@ -75,7 +75,7 @@ def _write_lab(tmp_path: Path, *, include_unknown_validator: bool = False) -> tu
                 "leader": {
                     "web": [
                         {
-                            "pattern": r"evidence\\.example/data",
+                            "pattern": r"evidence\.example/data",
                             "status": 200,
                             "body": json.dumps({"decision": "APPROVE"}),
                         }
@@ -84,7 +84,7 @@ def _write_lab(tmp_path: Path, *, include_unknown_validator: bool = False) -> tu
                 "validator": {
                     "web": [
                         {
-                            "pattern": r"evidence\\.example/data",
+                            "pattern": r"evidence\.example/data",
                             "status": 200,
                             "body": json.dumps({"decision": "APPROVE"}),
                         }
