@@ -3,8 +3,8 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from pathlib import Path
 from importlib import resources
+from pathlib import Path
 
 from .analysis import AnalysisConfig, analyze
 from .certification import certify_validator
