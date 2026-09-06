@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from .clustering import annotate_cluster_failures, build_clusters, diversity_metrics
 from .committee import simulate_committees
@@ -55,7 +55,7 @@ def analyze(
 
     return {
         "schema_version": 1,
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "methodology": {
             "cluster_threshold": config.cluster_threshold,
             "min_shared_failures": config.min_shared_failures,
