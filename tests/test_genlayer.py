@@ -1,4 +1,8 @@
-from cogent.genlayer import public_transaction_context, transaction_context, validator_to_genlayer_dict
+from cogent.genlayer import (
+    public_transaction_context,
+    transaction_context,
+    validator_to_genlayer_dict,
+)
 from cogent.models import ValidatorProfile
 
 
