@@ -120,11 +120,20 @@ def test_direct_lab_rejects_unknown_validator_override(tmp_path):
 def test_native_direct_engine_executes_real_validator_fn(tmp_path):
     _, lab_path = _write_lab(tmp_path)
     observations = run_direct_matrix(_fleet(), _corpus(), lab_path)
+    diagnostics = [
+        {
+            "validator": item.validator_id,
+            "outcome": item.outcome.value,
+            "reason": item.reason,
+            "metadata": item.metadata,
+        }
+        for item in observations
+    ]
 
     assert [(item.validator_id, item.outcome) for item in observations] == [
         ("validator-a", Outcome.ACCEPT),
         ("validator-b", Outcome.REJECT),
-    ]
+    ], diagnostics
     assert all(item.metadata["engine"] == "genlayer-test-direct" for item in observations)
     assert all(item.metadata["captured_nondet_blocks"] == 1 for item in observations)
     assert observations[0].metadata["validator_results"] == [True]
