@@ -7,7 +7,6 @@ from cogent.direct import load_direct_lab, run_direct_matrix
 from cogent.errors import ConfigError
 from cogent.models import Challenge, Outcome, ValidatorProfile
 
-
 CONTRACT_SOURCE = '''# v0.1.0
 # { "Depends": "py-genlayer:latest" }
 
