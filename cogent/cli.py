@@ -8,6 +8,7 @@ from pathlib import Path
 
 from .analysis import AnalysisConfig, analyze
 from .certification import certify_validator
+from .direct import load_direct_lab, run_direct_matrix, validate_direct_lab_coverage
 from .drift import drift_report
 from .errors import CogentError, ConfigError
 from .genlayer import public_transaction_context, validate_with_gltest
@@ -31,10 +32,10 @@ def build_parser() -> argparse.ArgumentParser:
             "for GenLayer validator fleets."
         ),
     )
-    parser.add_argument("--version", action="version", version="cogent-gl 0.1.0")
+    parser.add_argument("--version", action="version", version="cogent-gl 0.2.0")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    init = sub.add_parser("init", help="create a starter fleet, challenge corpus, and runner")
+    init = sub.add_parser("init", help="create a starter fleet, corpus, runner, and Direct Mode lab")
     init.add_argument("directory", nargs="?", default="cogent-lab")
     init.add_argument("--force", action="store_true")
 
@@ -43,6 +44,10 @@ def build_parser() -> argparse.ArgumentParser:
     validate.add_argument("--corpus", required=True)
     validate.add_argument("--observations")
     validate.add_argument("--gltest", action="store_true", help="round-trip profiles through genlayer-test")
+    validate.add_argument(
+        "--direct-lab",
+        help="also validate a native Direct Mode lab manifest against this fleet and corpus",
+    )
 
     contexts = sub.add_parser("contexts", help="export gltest-compatible validator transaction contexts")
     contexts.add_argument("--fleet", required=True)
@@ -57,10 +62,20 @@ def build_parser() -> argparse.ArgumentParser:
     contract = sub.add_parser("runner-contract", help="print the external runner interface contract")
     contract.add_argument("--json", action="store_true")
 
-    run = sub.add_parser("run", help="execute a validator × challenge matrix through an external runner")
+    run = sub.add_parser(
+        "run",
+        help="execute a validator × challenge matrix through native Direct Mode or an external runner",
+    )
     run.add_argument("--fleet", required=True)
     run.add_argument("--corpus", required=True)
-    run.add_argument("--runner", required=True, help='command, e.g. "python experiments/run_case.py"')
+    run.add_argument(
+        "--engine",
+        choices=("external", "direct"),
+        default="external",
+        help="execution engine; direct executes captured GenLayer validator functions in-process",
+    )
+    run.add_argument("--runner", help='external engine command, e.g. "python experiments/run_case.py"')
+    run.add_argument("--direct-lab", help="native Direct Mode lab manifest (required for --engine direct)")
     run.add_argument("--output", default="cogent-observations.jsonl")
     run.add_argument("--repetitions", type=int, default=1)
     run.add_argument("--seed", type=int, default=7)
@@ -120,11 +135,16 @@ def _init_project(directory: str, force: bool) -> None:
         ("fleet.yaml", "fleet.yaml"),
         ("corpus.yaml", "corpus.yaml"),
         ("runner.py", "runner.py"),
+        ("direct-lab.yaml", "direct-lab.yaml"),
     ]:
         content = template_root.joinpath(source_name).read_text(encoding="utf-8")
         (root / dest_name).write_text(content, encoding="utf-8")
     print(f"initialized Cogent lab at {root}")
-    print("next: cogent run --fleet fleet.yaml --corpus corpus.yaml --runner 'python runner.py'")
+    print("external: cogent run --fleet fleet.yaml --corpus corpus.yaml --runner 'python runner.py'")
+    print(
+        "native:   cogent run --engine direct --fleet fleet.yaml --corpus corpus.yaml "
+        "--direct-lab direct-lab.yaml"
+    )
 
 
 def _analysis_from_args(args: argparse.Namespace) -> dict:
@@ -145,6 +165,13 @@ def _analysis_from_args(args: argparse.Namespace) -> dict:
     )
 
 
+def _outcome_summary(observations: list) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for item in observations:
+        counts[item.outcome.value] = counts.get(item.outcome.value, 0) + 1
+    return counts
+
+
 def dispatch(args: argparse.Namespace) -> int:
     if args.command == "init":
         _init_project(args.directory, args.force)
@@ -157,6 +184,11 @@ def dispatch(args: argparse.Namespace) -> int:
         if args.gltest:
             for validator in validators:
                 validate_with_gltest(validator)
+        direct_lab_valid = False
+        if args.direct_lab:
+            lab = load_direct_lab(args.direct_lab, validators, challenges)
+            validate_direct_lab_coverage(lab, challenges)
+            direct_lab_valid = True
         print(
             json.dumps(
                 {
@@ -165,6 +197,7 @@ def dispatch(args: argparse.Namespace) -> int:
                     "challenges": len(challenges),
                     "observations": len(observations),
                     "gltest_roundtrip": bool(args.gltest),
+                    "direct_lab": direct_lab_valid,
                 },
                 indent=2,
             )
@@ -192,20 +225,48 @@ def dispatch(args: argparse.Namespace) -> int:
     if args.command == "run":
         validators = load_fleet(args.fleet)
         challenges = load_corpus(args.corpus)
-        observations = run_matrix(
-            args.runner,
-            validators,
-            challenges,
-            repetitions=args.repetitions,
-            global_seed=args.seed,
-            timeout_seconds=args.timeout,
-            workers=args.workers,
-        )
+        if args.engine == "direct":
+            if args.runner:
+                raise ConfigError("--runner cannot be used with --engine direct")
+            if not args.direct_lab:
+                raise ConfigError("--direct-lab is required with --engine direct")
+            if args.workers != 1:
+                raise ConfigError(
+                    "native Direct Mode is intentionally serial because genlayer-test Direct Mode "
+                    "uses process-global SDK/WASI state; leave --workers at 1"
+                )
+            observations = run_direct_matrix(
+                validators,
+                challenges,
+                args.direct_lab,
+                repetitions=args.repetitions,
+            )
+        else:
+            if args.direct_lab:
+                raise ConfigError("--direct-lab requires --engine direct")
+            if not args.runner:
+                raise ConfigError("--runner is required with --engine external")
+            observations = run_matrix(
+                args.runner,
+                validators,
+                challenges,
+                repetitions=args.repetitions,
+                global_seed=args.seed,
+                timeout_seconds=args.timeout,
+                workers=args.workers,
+            )
         write_jsonl(args.output, (item.to_dict() for item in observations))
-        counts = {}
-        for item in observations:
-            counts[item.outcome.value] = counts.get(item.outcome.value, 0) + 1
-        print(json.dumps({"output": args.output, "observations": len(observations), "outcomes": counts}, indent=2))
+        print(
+            json.dumps(
+                {
+                    "engine": args.engine,
+                    "output": args.output,
+                    "observations": len(observations),
+                    "outcomes": _outcome_summary(observations),
+                },
+                indent=2,
+            )
+        )
         return 0
 
     if args.command == "analyze":
@@ -213,7 +274,16 @@ def dispatch(args: argparse.Namespace) -> int:
         output_dir = Path(args.output_dir)
         write_json(output_dir / "analysis.json", result)
         write_report(output_dir / "report.md", result)
-        print(json.dumps({"output_dir": str(output_dir), "diversity": result["diversity"], "committee_simulation": result["committee_simulation"]}, indent=2))
+        print(
+            json.dumps(
+                {
+                    "output_dir": str(output_dir),
+                    "diversity": result["diversity"],
+                    "committee_simulation": result["committee_simulation"],
+                },
+                indent=2,
+            )
+        )
         return 0
 
     if args.command == "simulate":
@@ -251,7 +321,8 @@ def dispatch(args: argparse.Namespace) -> int:
         checks = {
             "normalized_diversity": diversity >= args.min_normalized_diversity,
             "correlated_majority_rate": correlated <= args.max_correlated_majority_rate,
-            "wrong_majority_rate": wrong is not None and float(wrong) <= args.max_wrong_majority_rate,
+            "wrong_majority_rate": wrong is not None
+            and float(wrong) <= args.max_wrong_majority_rate,
         }
         print(json.dumps({"passed": all(checks.values()), "checks": checks}, indent=2))
         return 0 if all(checks.values()) else 3
@@ -264,6 +335,6 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         return dispatch(args)
-    except (CogentError, ValueError, OSError) as exc:
+    except (CogentError, ValueError, OSError, RuntimeError) as exc:
         print(f"cogent: error: {exc}", file=sys.stderr)
         return 2
