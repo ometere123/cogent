@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from .models import Challenge, Observation, Outcome
 
@@ -55,7 +55,7 @@ def drift_report(
 
     return {
         "schema_version": 1,
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "shared_events": len(shared),
         "baseline_only_events": len(set(old) - set(new)),
         "current_only_events": len(set(new) - set(old)),
