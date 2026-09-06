@@ -9,8 +9,9 @@ permissions:
   contents: read
 
 env:
-  # Pin the GenVM runner used by native Direct Mode CI so the evidence is reproducible.
-  GENVM_VERSION: v0.3.0-rc7
+  # genlayer-test 0.29.2's published Direct Mode loader expects the legacy
+  # genvm-universal runner bundle. v0.2.16 is the released compatible bundle.
+  GENVM_VERSION: v0.2.16
 
 jobs:
   test:
