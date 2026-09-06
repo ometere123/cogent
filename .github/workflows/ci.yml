@@ -2,11 +2,16 @@ name: ci
 
 on:
   push:
-    branches: [main]
+    branches: [main, native-direct-engine]
   pull_request:
 
 permissions:
   contents: read
+
+env:
+  # genlayer-test 0.29.2's published Direct Mode loader expects the legacy
+  # genvm-universal runner bundle. v0.2.16 is the released compatible bundle.
+  GENVM_VERSION: v0.2.16
 
 jobs:
   test:
@@ -24,15 +29,19 @@ jobs:
       - run: python -m compileall -q cogent
       - run: ruff check cogent tests
       - run: pytest --cov=cogent --cov-report=term-missing
-      - name: Official genlayer-test validator round-trip
+      - name: Native Direct Mode executes captured GenLayer validator function
+        run: |
+          pytest -q tests/test_direct_engine.py::test_native_direct_engine_executes_real_validator_fn
+      - name: Official genlayer-test validator profile round-trip
         run: |
           cogent validate \
             --fleet examples/fleet-smoke.yaml \
             --corpus examples/corpus-smoke.yaml \
             --gltest
-      - name: Synthetic end-to-end Cogent smoke
+      - name: Synthetic external-runner end-to-end smoke
         run: |
           cogent run \
+            --engine external \
             --fleet examples/fleet-smoke.yaml \
             --corpus examples/corpus-smoke.yaml \
             --runner 'python examples/runner_synthetic.py' \

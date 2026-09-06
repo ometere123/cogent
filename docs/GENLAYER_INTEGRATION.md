@@ -1,13 +1,54 @@
 # GenLayer integration
 
-Cogent is an orchestration and analysis layer above existing GenLayer development tooling.
+Cogent is an orchestration and analysis layer for GenLayer validator behavior. v0.2 has two execution
+boundaries, and the evidence level is always recorded explicitly.
 
-## Why it does not replace `genlayer-test`
+## Native Direct Mode
 
-The official testing suite already provides Direct Mode, Studio Mode, mocked web/LLM behavior,
-custom validators, and `transaction_context`. Reimplementing those features would create a weaker
-parallel simulator. Cogent instead uses the same validator vocabulary and lets the project runner use
-the official execution path.
+Native mode uses the official `gltest.direct` surface from `genlayer-test` rather than implementing a
+parallel VM:
+
+```python
+from gltest.direct import VMContext, create_address, deploy_contract
+```
+
+Cogent deploys the developer's Intelligent Contract in Direct Mode, applies leader mocks, calls the
+configured contract method, verifies that one or more `gl.vm.run_nondet` validator functions were
+captured, swaps to validator evidence/mocks, and invokes:
+
+```python
+vm.run_validator(index=...)
+```
+
+The resulting boolean becomes the per-validator Cogent observation. This directly exercises the
+contract's captured GenLayer validator function; Cogent does not synthesize or predict the vote.
+
+See `docs/NATIVE_DIRECT_MODE.md` for the manifest and fidelity boundary.
+
+## External runner mode
+
+External runners remain supported because some experiments require surfaces Direct Mode does not
+provide: Studio/Studionet transactions, live providers, browser-backed web behavior, custom local
+infrastructure, transaction receipts or future network replay.
+
+The external mode contract is documented in `docs/RUNNER_CONTRACT.md`.
+
+## Why Cogent does not replace `genlayer-test`
+
+The official testing suite already provides Direct Mode, Studio Mode, mocked web/LLM behavior, custom
+validators, transaction contexts and simulator support. Reimplementing those features would create a
+weaker parallel stack.
+
+Cogent adds a different layer:
+
+- challenge-corpus orchestration;
+- per-validator behavioral observations;
+- co-failure and correlation analysis;
+- empirical failure-domain clustering;
+- committee-risk simulation;
+- drift and CI/readiness policy.
+
+Where GenLayer execution is needed, Cogent delegates execution semantics to the official tooling.
 
 ## Validator profile mapping
 
@@ -23,7 +64,7 @@ plugin: openai-compatible
 plugin_config: {api_key_env_var: OPENAI_API_KEY}
 ```
 
-`cogent contexts` removes the Cogent-only `id` and `labels` fields and emits:
+`cogent contexts` removes Cogent-only `id` and `labels` fields and emits:
 
 ```json
 {
@@ -38,33 +79,42 @@ plugin_config: {api_key_env_var: OPENAI_API_KEY}
 }
 ```
 
-This mirrors the current `genlayer-test` non-mocked `Validator.to_dict()` structure. When the optional
-`genlayer-test` dependency is installed, `cogent validate --gltest` round-trips every profile through
-`get_validator_factory().create_validator(...).to_dict()` so upstream shape incompatibilities fail
-early.
+When `genlayer-test` is installed, `cogent validate --gltest` round-trips every profile through
+`get_validator_factory().create_validator(...).to_dict()`. Upstream shape incompatibilities therefore
+fail before an experiment starts.
 
-## Suggested real-runner pattern
+## Execution evidence levels
 
-A project's runner should:
+Cogent deliberately distinguishes these levels:
 
-1. read the Cogent challenge and validator context;
-2. map the challenge payload to project-specific mocks/arguments;
-3. use `get_contract_factory` and the transaction context in Studio Mode, or Direct Mode when the
-   target behavior can be isolated there;
-4. inspect the actual validator/consensus result relevant to the challenge;
-5. emit one Cogent outcome JSON line.
+1. **Synthetic external smoke** — verifies package/orchestration/reporting only.
+2. **Native Direct Mode** — executes real user-contract leader and captured validator functions through
+   official `genlayer-test` Direct Mode with reproducible mocks.
+3. **Studio/Studionet/testnet external runner** — project-specific multi-validator/network-style
+   experiments using the official Studio tooling.
+4. **Future live receipt/replay integration** — planned transaction/committee/equivalence-output
+   ingestion.
 
-Cogent deliberately does not prescribe one universal interpretation of `ACCEPT` because contracts can
-use different equivalence principles and challenge semantics.
+The tool never describes a lower level as if it were a higher one.
 
-## Environment levels
+## Native Direct Mode caveat on fleet model fields
 
-Recommended progression:
+Direct Mode with deterministic mocks measures the **contract validator path under declared evidence
+conditions**. It does not itself invoke the `provider`/`model` named in a fleet profile. Those fields
+become operational only when an engine actually uses the corresponding live provider, for example a
+Studio/testnet external runner.
 
-1. synthetic runner — Cogent installation smoke test only;
-2. Direct Mode — fast challenge mapping and deterministic mocks;
-3. local Studio — custom heterogeneous validators and full consensus integration;
-4. Studionet / testnet — smaller pre-production behavioral samples where appropriate.
+This distinction prevents a deterministic regression test from being misrepresented as a benchmark of
+a production LLM.
 
-Studio and live networks can differ in exact web behavior or chain-layer parity. Keep environment name
-and transaction evidence in observation metadata when the distinction matters.
+## Suggested progression for a real project
+
+1. Build focused native Direct Mode cases for known equivalence/evidence failure modes.
+2. Make those cases permanent CI regressions.
+3. Run the same conceptual corpus against heterogeneous Studio validators where live-provider behavior
+   matters.
+4. Preserve environment/network/transaction evidence in observation metadata.
+5. Compare runs with `cogent drift` after contract, provider or model changes.
+
+Studio and live networks can differ from Direct Mode in web behavior, sandbox/runtime fidelity,
+committee/finality behavior and appeals. Those differences are evidence, not something Cogent hides.
