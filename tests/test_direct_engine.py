@@ -10,7 +10,7 @@ from cogent.models import Challenge, Outcome, ValidatorProfile
 CONTRACT_SOURCE = '''# v0.1.0
 # { "Depends": "py-genlayer:latest" }
 
-import genlayer as gl
+from genlayer import *
 
 
 class EvidenceGate(gl.Contract):
