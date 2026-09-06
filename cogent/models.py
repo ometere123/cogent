@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from .errors import ConfigError
 
 
-class Outcome(str, Enum):
+class Outcome(StrEnum):
     """Validator-level behavioral outcome for one challenge execution."""
 
     ACCEPT = "ACCEPT"
@@ -17,7 +17,7 @@ class Outcome(str, Enum):
     ERROR = "ERROR"
 
     @classmethod
-    def parse(cls, value: str | "Outcome") -> "Outcome":
+    def parse(cls, value: str | Outcome) -> Outcome:
         if isinstance(value, Outcome):
             return value
         try:
@@ -39,7 +39,7 @@ class ValidatorProfile:
     labels: dict[str, str] = field(default_factory=dict)
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "ValidatorProfile":
+    def from_dict(cls, data: dict[str, Any]) -> ValidatorProfile:
         identifier = str(data.get("id", "")).strip()
         if not identifier:
             raise ConfigError("validator.id is required")
@@ -85,7 +85,7 @@ class Challenge:
     payload: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "Challenge":
+    def from_dict(cls, data: dict[str, Any]) -> Challenge:
         identifier = str(data.get("id", "")).strip()
         family = str(data.get("family", "")).strip()
         if not identifier:
@@ -129,7 +129,7 @@ class Observation:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "Observation":
+    def from_dict(cls, data: dict[str, Any]) -> Observation:
         validator_id = str(data.get("validator_id", "")).strip()
         challenge_id = str(data.get("challenge_id", "")).strip()
         run_id = str(data.get("run_id", "0")).strip()
