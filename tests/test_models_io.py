@@ -7,7 +7,6 @@ from cogent.errors import ConfigError
 from cogent.io import load_corpus, load_fleet, load_observations
 from cogent.models import Outcome
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 
