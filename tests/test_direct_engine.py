@@ -63,6 +63,7 @@ def _write_lab(tmp_path: Path, *, include_unknown_validator: bool = False) -> tu
         "contract": {
             "path": contract_path.name,
             "sender": "cogent-native-test",
+            "sdk_version": "v0.2.16",
         },
         "cases": {
             "source-conflict": {
