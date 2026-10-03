@@ -2,7 +2,6 @@ name: ci
 
 on:
   push:
-    branches: [main, native-direct-engine]
   pull_request:
 
 permissions:
@@ -55,3 +54,20 @@ jobs:
             --committee-size 3 \
             --simulations 1000 \
             --output-dir /tmp/cogent-report
+  windows-portable:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      - run: pip install -e '.[dev,genlayer]'
+      - run: python -m compileall -q cogent
+      - run: ruff check cogent tests
+      - run: pytest -q --ignore=tests/test_direct_engine.py
+      - name: Windows external runner and CLI smoke
+        shell: pwsh
+        run: |
+          cogent run --engine external --fleet examples/fleet-smoke.yaml --corpus examples/corpus-smoke.yaml --runner "python examples/runner_synthetic.py" --output "$env:TEMP/cogent-observations.jsonl"
+          cogent simulate --fleet examples/fleet-smoke.yaml --corpus examples/corpus-smoke.yaml --observations "$env:TEMP/cogent-observations.jsonl" --committee-size 3 --simulations 10
