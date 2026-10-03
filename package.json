@@ -1,0 +1,14 @@
+{
+  "name": "cogent-repository-tooling",
+  "private": true,
+  "version": "0.0.0",
+  "devDependencies": {
+    "genlayer": "0.39.1"
+  },
+  "scripts": {
+    "gl:version": "genlayer --version",
+    "gl:network:studionet": "genlayer network set studionet",
+    "gl:network:info": "genlayer network info",
+    "gl:account:list": "genlayer account list"
+  }
+}
