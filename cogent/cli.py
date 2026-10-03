@@ -9,9 +9,9 @@ from pathlib import Path
 from .analysis import AnalysisConfig, analyze
 from .certification import certify_validator
 from .direct import load_direct_lab, run_direct_matrix, validate_direct_lab_coverage
-from .evidence import EvidenceRequirements
 from .drift import drift_report
 from .errors import CogentError, ConfigError
+from .evidence import EvidenceRequirements
 from .genlayer import public_transaction_context, validate_with_gltest
 from .io import load_corpus, load_fleet, load_observations, write_json, write_jsonl
 from .reporting import write_report

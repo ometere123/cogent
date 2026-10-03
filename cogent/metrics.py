@@ -6,7 +6,6 @@ from statistics import mean, median
 
 from .models import Challenge, Observation, Outcome, ValidatorProfile
 
-
 FAILURE_CHANNELS = ("semantic_failure", "operational_failure", "availability_failure", "combined_failure")
 
 
@@ -64,7 +63,6 @@ def validator_metrics(
                         failures[channel] += 1
                 if failed:
                     family_failures[challenge.family] += 1
-        operational_failures = counts[Outcome.ERROR.value] + counts[Outcome.TIMEOUT.value]
         result[validator.id] = {
             "executions": len(items),
             "accept": counts[Outcome.ACCEPT.value],
