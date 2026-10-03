@@ -25,6 +25,16 @@ def _float_01(value: str) -> float:
     return parsed
 
 
+def _add_evidence_requirement_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--min-labelled-challenges", type=int, default=10)
+    parser.add_argument("--min-observed-labelled-challenges", type=int, default=10)
+    parser.add_argument("--min-challenge-families", type=int, default=2)
+    parser.add_argument("--min-observations-per-validator", type=int, default=10)
+    parser.add_argument("--min-overlapping-events-per-pair", type=int, default=5)
+    parser.add_argument("--min-informative-failures", type=int, default=2)
+    parser.add_argument("--min-repetitions", type=int, default=1)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="cogent",
@@ -93,13 +103,7 @@ def build_parser() -> argparse.ArgumentParser:
     analyze_cmd.add_argument("--committee-size", type=int)
     analyze_cmd.add_argument("--simulations", type=int, default=5000)
     analyze_cmd.add_argument("--seed", type=int, default=7)
-    for command in (analyze_cmd,):
-        command.add_argument("--min-labelled-challenges", type=int, default=10)
-        command.add_argument("--min-challenge-families", type=int, default=2)
-        command.add_argument("--min-observations-per-validator", type=int, default=10)
-        command.add_argument("--min-overlapping-events-per-pair", type=int, default=5)
-        command.add_argument("--min-informative-failures", type=int, default=2)
-        command.add_argument("--min-repetitions", type=int, default=1)
+    _add_evidence_requirement_args(analyze_cmd)
 
     simulate = sub.add_parser("simulate", help="run analysis and print only committee-risk metrics")
     simulate.add_argument("--fleet", required=True)
@@ -110,6 +114,7 @@ def build_parser() -> argparse.ArgumentParser:
     simulate.add_argument("--seed", type=int, default=7)
     simulate.add_argument("--cluster-threshold", type=_float_01, default=0.75)
     simulate.add_argument("--min-shared-failures", type=int, default=2)
+    _add_evidence_requirement_args(simulate)
 
     drift = sub.add_parser("drift", help="compare two observation datasets for behavioral drift")
     drift.add_argument("--corpus", required=True)
@@ -171,6 +176,7 @@ def _analysis_from_args(args: argparse.Namespace) -> dict:
             seed=args.seed,
             evidence_requirements=EvidenceRequirements(
                 min_labelled_challenges=args.min_labelled_challenges,
+                min_observed_labelled_challenges=args.min_observed_labelled_challenges,
                 min_challenge_families=args.min_challenge_families,
                 min_observations_per_validator=args.min_observations_per_validator,
                 min_overlapping_events_per_pair=args.min_overlapping_events_per_pair,

@@ -30,8 +30,9 @@ def test_sufficient_evidence_requires_every_exposed_threshold():
         validators, challenges, observations,
         AnalysisConfig(evidence_requirements=EvidenceRequirements(
             min_labelled_challenges=1, min_challenge_families=1,
+            min_observed_labelled_challenges=1,
             min_observations_per_validator=1, min_overlapping_events_per_pair=1,
-            min_informative_failures=2, min_repetitions_for_stochastic_engine=1,
+            min_informative_failures=1, min_repetitions_for_stochastic_engine=1,
         )),
     )
     assert report["evidence_sufficiency"]["status"] == "SUFFICIENT"

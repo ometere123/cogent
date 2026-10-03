@@ -42,7 +42,9 @@ def analyze(
     for channel in ("semantic_failure", "operational_failure", "availability_failure", "combined_failure"):
         built = build_clusters(validators, pairwise, threshold=config.cluster_threshold,
                                min_shared_failures=config.min_shared_failures, channel=channel)
-        clusters_by_channel[channel] = annotate_cluster_failures(built, challenges, observations)
+        clusters_by_channel[channel] = annotate_cluster_failures(
+            built, challenges, observations, channel=channel
+        )
     clusters = clusters_by_channel["combined_failure"]
     committee_size = config.committee_size or min(5, len(validators))
     simulation = simulate_committees(

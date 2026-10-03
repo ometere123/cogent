@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 
+from .metrics import failure_channel
 from .models import Challenge, Observation, ValidatorProfile
 
 
@@ -59,7 +60,7 @@ def build_clusters(
 
 
 def annotate_cluster_failures(
-    clusters: list[dict], challenges: list[Challenge], observations: list[Observation]
+    clusters: list[dict], challenges: list[Challenge], observations: list[Observation], *, channel: str = "combined_failure"
 ) -> list[dict]:
     challenge_map = {item.id: item for item in challenges}
     observations_by_validator: dict[str, list[Observation]] = defaultdict(list)
@@ -74,9 +75,10 @@ def annotate_cluster_failures(
                 challenge = challenge_map.get(observation.challenge_id)
                 if challenge is None or challenge.expected is None:
                     continue
-                if observation.outcome != challenge.expected:
+                if failure_channel(observation, challenge, channel):
                     families[challenge.family] += 1
         item = dict(cluster)
+        item["failure_channel"] = channel
         item["dominant_failure_families"] = [
             {"family": family, "events": count} for family, count in families.most_common(5)
         ]
