@@ -5,6 +5,7 @@ def test_certification_policy_passes():
     analysis = {
         "validators": {"v": {"failure_rate": 0.01, "operational_failure_rate": 0.0}},
         "clusters": [{"id": "C1", "validators": ["v"], "size": 1}],
+        "evidence_sufficiency": {"status": "SUFFICIENT"},
     }
     result = certify_validator(analysis, "v", max_failure_rate=0.05, max_cluster_size=1)
     assert result["passed"] is True

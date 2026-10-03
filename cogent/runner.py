@@ -96,7 +96,9 @@ def run_one(
         )
         try:
             result = subprocess.run(
-                shlex.split(command),
+                # Windows paths contain backslashes. POSIX shlex removes them and turns
+                # a valid Python executable path into a nonexistent relative command.
+                shlex.split(command, posix=os.name != "nt"),
                 capture_output=True,
                 text=True,
                 timeout=timeout_seconds,

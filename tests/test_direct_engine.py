@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -118,6 +119,7 @@ def test_direct_lab_rejects_unknown_validator_override(tmp_path):
         load_direct_lab(lab_path, _fleet(), _corpus())
 
 
+@pytest.mark.skipif(os.name == "nt", reason="genlayer-test Direct Mode tempfile cleanup is blocked on Windows")
 def test_native_direct_engine_executes_real_validator_fn(tmp_path):
     _, lab_path = _write_lab(tmp_path)
     observations = run_direct_matrix(_fleet(), _corpus(), lab_path)
@@ -141,6 +143,7 @@ def test_native_direct_engine_executes_real_validator_fn(tmp_path):
     assert observations[1].metadata["validator_results"] == [False]
 
 
+@pytest.mark.skipif(os.name == "nt", reason="genlayer-test Direct Mode tempfile cleanup is blocked on Windows")
 def test_native_direct_engine_repetition_ids_are_stable(tmp_path):
     _, lab_path = _write_lab(tmp_path)
     observations = run_direct_matrix(_fleet(), _corpus(), lab_path, repetitions=2)

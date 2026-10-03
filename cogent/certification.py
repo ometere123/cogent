@@ -13,6 +13,15 @@ def certify_validator(
     if metrics is None:
         raise ValueError(f"validator not found in analysis: {validator_id}")
     checks = []
+    evidence_status = analysis.get("evidence_sufficiency", {}).get("status", "INSUFFICIENT")
+    checks.append(
+        {
+            "name": "evidence_sufficiency",
+            "pass": evidence_status == "SUFFICIENT",
+            "actual": evidence_status,
+            "threshold": "SUFFICIENT",
+        }
+    )
 
     failure = metrics.get("failure_rate")
     checks.append(

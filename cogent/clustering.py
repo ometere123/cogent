@@ -82,9 +82,21 @@ def annotate_cluster_failures(
     return enriched
 
 
-def diversity_metrics(validators: list[ValidatorProfile], clusters: list[dict]) -> dict:
+def diversity_metrics(
+    validators: list[ValidatorProfile], clusters: list[dict], *, evidence_status: str = "SUFFICIENT"
+) -> dict:
+    if evidence_status != "SUFFICIENT":
+        return {
+            "evidence_status": evidence_status,
+            "nominal_validators": len(validators),
+            "effective_failure_domains": None,
+            "normalized_diversity": None,
+            "largest_cluster_share": None,
+            "warning": "Failure-domain diversity is unavailable because evidence is insufficient.",
+        }
     if not validators:
         return {
+            "evidence_status": evidence_status,
             "nominal_validators": 0,
             "effective_failure_domains": 0.0,
             "normalized_diversity": 0.0,
@@ -96,6 +108,7 @@ def diversity_metrics(validators: list[ValidatorProfile], clusters: list[dict]) 
     shares = [weight / total for weight in cluster_weights if total]
     effective = 1.0 / sum(share * share for share in shares) if shares else 0.0
     return {
+        "evidence_status": evidence_status,
         "nominal_validators": len(validators),
         "effective_failure_domains": effective,
         "normalized_diversity": effective / len(validators),

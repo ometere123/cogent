@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 
 from .clustering import annotate_cluster_failures, build_clusters, diversity_metrics
 from .committee import simulate_committees
+from .evidence import EvidenceRequirements, assess_evidence
 from .metrics import challenge_metrics, pairwise_metrics, validator_metrics
 from .models import Challenge, Observation, ValidatorProfile
 
@@ -16,6 +17,7 @@ class AnalysisConfig:
     committee_size: int | None = None
     simulations: int = 5000
     seed: int = 7
+    evidence_requirements: EvidenceRequirements = EvidenceRequirements()
 
 
 def analyze(
@@ -34,6 +36,7 @@ def analyze(
     if unknown_challenges:
         raise ValueError(f"observations reference unknown challenges: {unknown_challenges}")
 
+    evidence = assess_evidence(validators, challenges, observations, config.evidence_requirements)
     pairwise = pairwise_metrics(validators, challenges, observations)
     clusters = build_clusters(
         validators,
@@ -79,6 +82,9 @@ def analyze(
         "challenges": challenge_metrics(challenges, observations),
         "pairwise": pairwise,
         "clusters": clusters,
-        "diversity": diversity_metrics(validators, clusters),
+        "evidence_sufficiency": evidence,
+        "diversity": diversity_metrics(
+            validators, clusters, evidence_status=evidence["status"],
+        ),
         "committee_simulation": simulation,
     }

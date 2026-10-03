@@ -10,6 +10,8 @@ def _pct(value: float | None) -> str:
 def analysis_markdown(analysis: dict) -> str:
     diversity = analysis["diversity"]
     simulation = analysis["committee_simulation"]
+    domains = diversity["effective_failure_domains"]
+    domain_display = "unavailable" if domains is None else f"{domains:.2f}"
     lines = [
         "# Cogent behavioral-independence report",
         "",
@@ -22,7 +24,8 @@ def analysis_markdown(analysis: dict) -> str:
         f"- Challenges: **{analysis['corpus']['challenges']}** across {len(analysis['corpus']['families'])} families",
         f"- Observations: **{analysis['corpus']['observations']}**",
         f"- Empirical failure clusters: **{len(analysis['clusters'])}**",
-        f"- Effective failure domains: **{diversity['effective_failure_domains']:.2f}**",
+        f"- Evidence sufficiency: **{analysis['evidence_sufficiency']['status']}**",
+        f"- Effective failure domains: **{domain_display}**",
         f"- Normalized behavioral diversity: **{_pct(diversity['normalized_diversity'])}**",
         f"- Largest empirical cluster stake share: **{_pct(diversity['largest_cluster_share'])}**",
         "",
@@ -66,6 +69,7 @@ def analysis_markdown(analysis: dict) -> str:
             "",
             f"- Cluster threshold: `{analysis['methodology']['cluster_threshold']}`",
             f"- Minimum shared failures: `{analysis['methodology']['min_shared_failures']}`",
+            f"- Evidence requirements: `{analysis['evidence_sufficiency']['requirements']}`",
             f"- Correlation basis: {analysis['methodology']['correlation_basis']}",
             f"- Diversity basis: {analysis['methodology']['diversity_basis']}",
             "",

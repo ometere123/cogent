@@ -9,6 +9,7 @@ from pathlib import Path
 from .analysis import AnalysisConfig, analyze
 from .certification import certify_validator
 from .direct import load_direct_lab, run_direct_matrix, validate_direct_lab_coverage
+from .evidence import EvidenceRequirements
 from .drift import drift_report
 from .errors import CogentError, ConfigError
 from .genlayer import public_transaction_context, validate_with_gltest
@@ -92,6 +93,13 @@ def build_parser() -> argparse.ArgumentParser:
     analyze_cmd.add_argument("--committee-size", type=int)
     analyze_cmd.add_argument("--simulations", type=int, default=5000)
     analyze_cmd.add_argument("--seed", type=int, default=7)
+    for command in (analyze_cmd,):
+        command.add_argument("--min-labelled-challenges", type=int, default=10)
+        command.add_argument("--min-challenge-families", type=int, default=2)
+        command.add_argument("--min-observations-per-validator", type=int, default=10)
+        command.add_argument("--min-overlapping-events-per-pair", type=int, default=5)
+        command.add_argument("--min-informative-failures", type=int, default=2)
+        command.add_argument("--min-repetitions", type=int, default=1)
 
     simulate = sub.add_parser("simulate", help="run analysis and print only committee-risk metrics")
     simulate.add_argument("--fleet", required=True)
@@ -161,6 +169,15 @@ def _analysis_from_args(args: argparse.Namespace) -> dict:
             committee_size=args.committee_size,
             simulations=args.simulations,
             seed=args.seed,
+            evidence_requirements=EvidenceRequirements(
+                min_labelled_challenges=args.min_labelled_challenges,
+                min_challenge_families=args.min_challenge_families,
+                min_observations_per_validator=args.min_observations_per_validator,
+                min_overlapping_events_per_pair=args.min_overlapping_events_per_pair,
+                min_informative_failures=args.min_informative_failures,
+                min_shared_failures_for_correlation=args.min_shared_failures,
+                min_repetitions_for_stochastic_engine=args.min_repetitions,
+            ),
         ),
     )
 
@@ -314,12 +331,15 @@ def dispatch(args: argparse.Namespace) -> int:
 
     if args.command == "ci":
         analysis = json.loads(Path(args.analysis).read_text(encoding="utf-8"))
-        diversity = float(analysis["diversity"]["normalized_diversity"])
+        evidence_status = analysis.get("evidence_sufficiency", {}).get("status")
+        diversity_value = analysis["diversity"].get("normalized_diversity")
+        diversity = float(diversity_value) if diversity_value is not None else None
         simulation = analysis["committee_simulation"]
         correlated = float(simulation["correlated_cluster_majority_rate"])
         wrong = simulation.get("wrong_majority_rate")
         checks = {
-            "normalized_diversity": diversity >= args.min_normalized_diversity,
+            "evidence_sufficiency": evidence_status == "SUFFICIENT",
+            "normalized_diversity": diversity is not None and diversity >= args.min_normalized_diversity,
             "correlated_majority_rate": correlated <= args.max_correlated_majority_rate,
             "wrong_majority_rate": wrong is not None
             and float(wrong) <= args.max_wrong_majority_rate,
