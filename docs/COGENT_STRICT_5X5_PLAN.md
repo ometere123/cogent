@@ -22,9 +22,9 @@
 
 | Checkpoint | Scope | Status |
 | --- | --- | --- |
-| CP01 | Baseline audit and plan | in progress |
-| CP02 | Evidence sufficiency, fail-closed policy | pending |
-| CP03 | Separate semantic, operational, availability, combined channels | pending |
+| CP01 | Baseline audit and plan | complete: `a2329dc` |
+| CP02 | Evidence sufficiency, fail-closed policy | complete: `4f2c192` |
+| CP03 | Separate semantic, operational, availability, combined channels | complete: `0d8816a` |
 | CP04 | Oracle provenance and experiment identity | pending |
 | CP05 | Canonical artifacts and verifier | pending |
 | CP06-07 | Attestation contract and adversarial tests | pending |
@@ -36,3 +36,10 @@
 ## Evidence record
 
 Test counts, deployment receipts, and final commit are recorded here only after the corresponding command or chain readback succeeds. No live-chain or frontend deployment claim is made before that evidence exists.
+
+### Local verification, 2026-10-03
+
+- Python 3.12 test suite: `34 passed, 2 skipped`.
+- The two skipped tests are native Direct Mode executions on Windows. `genlayer-test` currently leaves a temporary file locked and raises `PermissionError`; this is documented as an upstream Windows limitation rather than a pass.
+- Studionet preset reports chain ID `61999`, which is the required canonical network.
+- Deployment is blocked: installed GenLayer CLI is `0.40.0-rc.3`, not the required stable `0.39.1`. The hard gate prohibits substituting this release-candidate CLI for canonical evidence.
