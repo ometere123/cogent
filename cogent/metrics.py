@@ -7,12 +7,29 @@ from statistics import mean, median
 from .models import Challenge, Observation, Outcome, ValidatorProfile
 
 
-def _failure(observation: Observation, challenge: Challenge) -> bool | None:
+FAILURE_CHANNELS = ("semantic_failure", "operational_failure", "availability_failure", "combined_failure")
+
+
+def failure_channel(observation: Observation, challenge: Challenge, channel: str) -> bool | None:
+    """Classify failures without conflating wrong reasoning and unavailable execution."""
+    if channel not in FAILURE_CHANNELS:
+        raise ValueError(f"unknown failure channel: {channel}")
     if challenge.expected is None:
         return None
-    if observation.outcome in (Outcome.ERROR, Outcome.TIMEOUT, Outcome.UNDETERMINED):
-        return True
-    return observation.outcome != challenge.expected
+    semantic = observation.outcome in (Outcome.ACCEPT, Outcome.REJECT) and observation.outcome != challenge.expected
+    operational = observation.outcome in (Outcome.ERROR, Outcome.TIMEOUT, Outcome.UNDETERMINED)
+    availability = observation.outcome in (Outcome.ERROR, Outcome.TIMEOUT)
+    return {
+        "semantic_failure": semantic,
+        "operational_failure": operational,
+        "availability_failure": availability,
+        "combined_failure": semantic or operational,
+    }[channel]
+
+
+def _failure(observation: Observation, challenge: Challenge) -> bool | None:
+    """Compatibility alias for the historic aggregate risk view."""
+    return failure_channel(observation, challenge, "combined_failure")
 
 
 def validator_metrics(
@@ -30,7 +47,7 @@ def validator_metrics(
         items = by_validator.get(validator.id, [])
         counts = Counter(item.outcome.value for item in items)
         known = 0
-        failures = 0
+        failures = {channel: 0 for channel in FAILURE_CHANNELS}
         latencies = [item.latency_ms for item in items if item.latency_ms is not None]
         family_known: dict[str, int] = defaultdict(int)
         family_failures: dict[str, int] = defaultdict(int)
@@ -42,8 +59,10 @@ def validator_metrics(
             if failed is not None:
                 known += 1
                 family_known[challenge.family] += 1
+                for channel in FAILURE_CHANNELS:
+                    if failure_channel(item, challenge, channel):
+                        failures[channel] += 1
                 if failed:
-                    failures += 1
                     family_failures[challenge.family] += 1
         operational_failures = counts[Outcome.ERROR.value] + counts[Outcome.TIMEOUT.value]
         result[validator.id] = {
@@ -54,9 +73,11 @@ def validator_metrics(
             "error": counts[Outcome.ERROR.value],
             "timeout": counts[Outcome.TIMEOUT.value],
             "known_expectation_executions": known,
-            "failures": failures,
-            "failure_rate": failures / known if known else None,
-            "operational_failure_rate": operational_failures / len(items) if items else None,
+            "failures": failures["combined_failure"],
+            "failure_rate": failures["combined_failure"] / known if known else None,
+            "semantic_failure_rate": failures["semantic_failure"] / known if known else None,
+            "operational_failure_rate": failures["operational_failure"] / known if known else None,
+            "availability_failure_rate": failures["availability_failure"] / known if known else None,
             "mean_latency_ms": mean(latencies) if latencies else None,
             "median_latency_ms": median(latencies) if latencies else None,
             "family_failure_rates": {
@@ -113,26 +134,28 @@ def pairwise_metrics(
                 left_events[key].outcome == right_events[key].outcome for key in shared
             ) / len(shared)
 
-            failure_a: list[bool] = []
-            failure_b: list[bool] = []
+            channel_values = {channel: ([], []) for channel in FAILURE_CHANNELS}
             for key in shared:
                 challenge = challenge_map.get(key[0])
                 if challenge is None or challenge.expected is None:
                     continue
-                failure_a.append(bool(_failure(left_events[key], challenge)))
-                failure_b.append(bool(_failure(right_events[key], challenge)))
-
-            if failure_a:
-                set_a = {i for i, value in enumerate(failure_a) if value}
-                set_b = {i for i, value in enumerate(failure_b) if value}
-                union = set_a | set_b
-                jaccard = len(set_a & set_b) / len(union) if union else 0.0
-                phi = _phi(failure_a, failure_b)
-                shared_failures = len(set_a & set_b)
-            else:
-                jaccard = None
-                phi = None
-                shared_failures = 0
+                for channel, (left_values, right_values) in channel_values.items():
+                    left_values.append(bool(failure_channel(left_events[key], challenge, channel)))
+                    right_values.append(bool(failure_channel(right_events[key], challenge, channel)))
+            channels = {}
+            for channel, (failure_a, failure_b) in channel_values.items():
+                if failure_a:
+                    set_a = {i for i, value in enumerate(failure_a) if value}
+                    set_b = {i for i, value in enumerate(failure_b) if value}
+                    union = set_a | set_b
+                    channels[channel] = {
+                        "jaccard": len(set_a & set_b) / len(union) if union else 0.0,
+                        "phi": _phi(failure_a, failure_b),
+                        "shared_failures": len(set_a & set_b),
+                    }
+                else:
+                    channels[channel] = {"jaccard": None, "phi": None, "shared_failures": 0}
+            combined = channels["combined_failure"]
 
             rows.append(
                 {
@@ -140,9 +163,10 @@ def pairwise_metrics(
                     "right": right.id,
                     "overlap": len(shared),
                     "agreement_rate": agreement,
-                    "failure_jaccard": jaccard,
-                    "failure_phi": phi,
-                    "shared_failures": shared_failures,
+                    "channels": channels,
+                    "failure_jaccard": combined["jaccard"],
+                    "failure_phi": combined["phi"],
+                    "shared_failures": combined["shared_failures"],
                 }
             )
     return rows

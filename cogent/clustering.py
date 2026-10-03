@@ -32,13 +32,15 @@ def build_clusters(
     *,
     threshold: float = 0.75,
     min_shared_failures: int = 2,
+    channel: str = "combined_failure",
 ) -> list[dict]:
     ids = [item.id for item in validators]
     uf = _UnionFind(ids)
     for pair in pairwise:
-        jaccard = pair.get("failure_jaccard")
-        phi = pair.get("failure_phi")
-        shared = int(pair.get("shared_failures") or 0)
+        metrics = pair.get("channels", {}).get(channel, pair if channel == "combined_failure" else {})
+        jaccard = metrics.get("jaccard", metrics.get("failure_jaccard"))
+        phi = metrics.get("phi", metrics.get("failure_phi"))
+        shared = int(metrics.get("shared_failures") or 0)
         if shared < min_shared_failures:
             continue
         score = max(float(jaccard or 0.0), float(phi or 0.0))

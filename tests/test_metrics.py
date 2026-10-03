@@ -49,3 +49,13 @@ def test_challenge_failure_rate():
     validators, challenges, observations = _fixtures()
     metrics = challenge_metrics(challenges, observations)
     assert metrics["x"]["failure_rate"] == 2 / 3
+
+
+def test_operational_failure_is_not_semantic_failure():
+    validators = [ValidatorProfile("a"), ValidatorProfile("b")]
+    challenges = [Challenge("x", "fam", "", Outcome.ACCEPT)]
+    observations = [Observation("a", "x", "0", Outcome.TIMEOUT), Observation("b", "x", "0", Outcome.TIMEOUT)]
+    row = pairwise_metrics(validators, challenges, observations)[0]
+    assert row["channels"]["semantic_failure"]["shared_failures"] == 0
+    assert row["channels"]["operational_failure"]["shared_failures"] == 1
+    assert row["channels"]["availability_failure"]["shared_failures"] == 1

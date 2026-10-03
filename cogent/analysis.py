@@ -38,13 +38,12 @@ def analyze(
 
     evidence = assess_evidence(validators, challenges, observations, config.evidence_requirements)
     pairwise = pairwise_metrics(validators, challenges, observations)
-    clusters = build_clusters(
-        validators,
-        pairwise,
-        threshold=config.cluster_threshold,
-        min_shared_failures=config.min_shared_failures,
-    )
-    clusters = annotate_cluster_failures(clusters, challenges, observations)
+    clusters_by_channel = {}
+    for channel in ("semantic_failure", "operational_failure", "availability_failure", "combined_failure"):
+        built = build_clusters(validators, pairwise, threshold=config.cluster_threshold,
+                               min_shared_failures=config.min_shared_failures, channel=channel)
+        clusters_by_channel[channel] = annotate_cluster_failures(built, challenges, observations)
+    clusters = clusters_by_channel["combined_failure"]
     committee_size = config.committee_size or min(5, len(validators))
     simulation = simulate_committees(
         validators,
@@ -82,6 +81,7 @@ def analyze(
         "challenges": challenge_metrics(challenges, observations),
         "pairwise": pairwise,
         "clusters": clusters,
+        "clusters_by_channel": clusters_by_channel,
         "evidence_sufficiency": evidence,
         "diversity": diversity_metrics(
             validators, clusters, evidence_status=evidence["status"],
